@@ -115,24 +115,66 @@
 
   <script>
     (function() {
+      // ======================================================
+      // ANLEITUNG – Google Apps Script als Counter-Backend
+      // ======================================================
+      // 1. Öffne https://script.google.com und erstelle ein neues Projekt
+      // 2. Lösche den Inhalt und füge diesen Code ein:
+      //
+      //   const SHEET_ID = 'DEINE_SHEET_ID';  // <-- Google Sheet ID eintragen
+      //
+      //   function doGet(e) {
+      //     const sheet = SpreadsheetApp.openById(SHEET_ID).getActiveSheet();
+      //     const action = e.parameter.action || 'get';
+      //     let count = Number(sheet.getRange('A1').getValue()) || 0;
+      //     if (action === 'increment') {
+      //       count++;
+      //       sheet.getRange('A1').setValue(count);
+      //     }
+      //     return ContentService
+      //       .createTextOutput(JSON.stringify({ count: count }))
+      //       .setMimeType(ContentService.MimeType.JSON);
+      //   }
+      //
+      // 3. Erstelle ein leeres Google Sheet und trage 0 in Zelle A1 ein
+      // 4. Kopiere die Sheet-ID aus der URL und setze sie oben ein
+      // 5. Klicke "Bereitstellen" > "Neue Bereitstellung" > "Web-App"
+      //    - Ausführen als: Ich
+      //    - Zugriff: Jeder
+      // 6. Kopiere die Web-App-URL und trage sie unten ein
+      // ======================================================
+
+      const COUNTER_URL = 'https://script.google.com/macros/s/AKfycbz2xIb3UYbMl2PcXefhH0LiiYWgTbUcFloTVQoIE_88p8vsOmBzFIlWbZlEcwqMRDN5/exec';
+      // Beispiel: 'https://script.google.com/macros/s/AKfyc.../exec'
+
       const SESSION_KEY = 'mps_visited';
       const isNew = !sessionStorage.getItem(SESSION_KEY);
 
-      fetch('counter.php' + (isNew ? '?action=increment' : ''))
-        .then(r => r.json())
-        .then(data => {
-          if (isNew) sessionStorage.setItem(SESSION_KEY, '1');
-          const digits = String(data.count || 0).padStart(5, '0');
-          const container = document.getElementById('visitorDigits');
-          for (const d of digits) {
-            const span = document.createElement('span');
-            span.textContent = d;
-            container.appendChild(span);
-          }
-        })
-        .catch(() => {
-          document.getElementById('visitorDigits').textContent = '—';
-        });
+      if (COUNTER_URL.startsWith('https://script.google.com')) {
+        fetch(COUNTER_URL + '?action=' + (isNew ? 'increment' : 'get'))
+          .then(r => r.json())
+          .then(data => {
+            if (isNew) sessionStorage.setItem(SESSION_KEY, '1');
+            renderDigits(data.count || 0);
+          })
+          .catch(() => renderDigits(0));
+      } else {
+        // Fallback: lokaler Counter bis die URL eingetragen ist
+        let count = parseInt(localStorage.getItem('mps_count') || '0', 10);
+        if (isNew) { count++; localStorage.setItem('mps_count', count); sessionStorage.setItem(SESSION_KEY, '1'); }
+        renderDigits(count);
+      }
+
+      function renderDigits(count) {
+        const digits = String(count).padStart(5, '0');
+        const container = document.getElementById('visitorDigits');
+        container.innerHTML = '';
+        for (const d of digits) {
+          const span = document.createElement('span');
+          span.textContent = d;
+          container.appendChild(span);
+        }
+      }
     })();
   </script>
 </body>
