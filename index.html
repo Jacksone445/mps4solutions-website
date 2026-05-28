@@ -115,30 +115,35 @@
 
   <script>
     (function() {
-      const COUNTER_URL = 'https://script.google.com/macros/s/AKfycbz2xIb3UYbMl2PcXefhH0LiiYWgTbUcFloTVQoIE_88p8vsOmBzFIlWbZlEcwqMRDN5/exec';
-      const SESSION_KEY = 'mps_visited';
-      const isNew = !sessionStorage.getItem(SESSION_KEY);
-      const url = COUNTER_URL + '?action=' + (isNew ? 'increment' : 'get');
+      var COUNTER_URL = 'https://script.google.com/macros/s/AKfycbz2xIb3UYbMl2PcXefhH0LiiYWgTbUcFloTVQoIE_88p8vsOmBzFIlWbZlEcwqMRDN5/exec';
+      var SESSION_KEY = 'mps_visited';
+      var isNew = !sessionStorage.getItem(SESSION_KEY);
+      var action = isNew ? 'increment' : 'get';
+      var cbName = '_mpsVisitor' + Date.now();
 
       function renderDigits(count) {
-        const digits = String(count).padStart(5, '0');
-        const container = document.getElementById('visitorDigits');
+        var digits = String(count).padStart(5, '0');
+        var container = document.getElementById('visitorDigits');
         container.innerHTML = '';
-        for (const d of digits) {
-          const span = document.createElement('span');
-          span.textContent = d;
+        for (var i = 0; i < digits.length; i++) {
+          var span = document.createElement('span');
+          span.textContent = digits[i];
           container.appendChild(span);
         }
       }
 
-      fetch(url, { redirect: 'follow' })
-        .then(function(r) { return r.text(); })
-        .then(function(text) {
-          var data = JSON.parse(text);
-          if (isNew) sessionStorage.setItem(SESSION_KEY, '1');
-          renderDigits(data.count || 0);
-        })
-        .catch(function() { renderDigits(0); });
+      // JSONP callback
+      window[cbName] = function(data) {
+        if (isNew) sessionStorage.setItem(SESSION_KEY, '1');
+        renderDigits(data.count || 0);
+        delete window[cbName];
+      };
+
+      // Lade Zähler via Script-Tag (umgeht CORS)
+      var s = document.createElement('script');
+      s.src = COUNTER_URL + '?action=' + action + '&callback=' + cbName;
+      s.onerror = function() { renderDigits(0); };
+      document.body.appendChild(s);
     })();
   </script>
 </body>
