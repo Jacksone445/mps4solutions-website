@@ -115,24 +115,24 @@
 
   <script>
     (function() {
-      const STORAGE_KEY = 'mps_visitor_count';
       const SESSION_KEY = 'mps_visited';
+      const isNew = !sessionStorage.getItem(SESSION_KEY);
 
-      let count = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
-
-      if (!sessionStorage.getItem(SESSION_KEY)) {
-        count++;
-        localStorage.setItem(STORAGE_KEY, count);
-        sessionStorage.setItem(SESSION_KEY, '1');
-      }
-
-      const digits = String(count).padStart(5, '0');
-      const container = document.getElementById('visitorDigits');
-      for (const d of digits) {
-        const span = document.createElement('span');
-        span.textContent = d;
-        container.appendChild(span);
-      }
+      fetch('counter.php' + (isNew ? '?action=increment' : ''))
+        .then(r => r.json())
+        .then(data => {
+          if (isNew) sessionStorage.setItem(SESSION_KEY, '1');
+          const digits = String(data.count || 0).padStart(5, '0');
+          const container = document.getElementById('visitorDigits');
+          for (const d of digits) {
+            const span = document.createElement('span');
+            span.textContent = d;
+            container.appendChild(span);
+          }
+        })
+        .catch(() => {
+          document.getElementById('visitorDigits').textContent = '—';
+        });
     })();
   </script>
 </body>
